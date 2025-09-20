@@ -1,6 +1,11 @@
 class SMSDashboard {
     constructor() {
-        this.socket = io();
+        this.socket = io({
+            transports: ['websocket', 'polling'],
+            forceNew: true,
+            reconnection: true,
+            timeout: 5000
+        });
         this.conversations = {};
         this.customers = {};
         this.currentConversation = null;
@@ -66,6 +71,19 @@ class SMSDashboard {
         
         this.socket.on('conversation-deleted', (data) => {
             this.handleConversationDeleted(data);
+        });
+        
+        // Debug connection
+        this.socket.on('connect', () => {
+            console.log('Socket connected:', this.socket.id);
+        });
+        
+        this.socket.on('disconnect', () => {
+            console.log('Socket disconnected');
+        });
+        
+        this.socket.on('connect_error', (error) => {
+            console.error('Socket connection error:', error);
         });
     }
     
