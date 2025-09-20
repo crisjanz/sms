@@ -290,17 +290,17 @@ class SMSDashboard {
         }
         this.conversations[phoneNumber].push(message);
         
+        // Mark as unread if not current conversation (BEFORE rendering)
+        if (this.currentConversation !== phoneNumber && message.direction === 'inbound') {
+            this.unreadConversations.add(phoneNumber);
+        }
+        
         // Re-render conversations list
         this.renderConversations();
         
         // If this conversation is currently selected, update messages
         if (this.currentConversation === phoneNumber) {
             this.renderMessages(phoneNumber);
-        }
-        
-        // Mark as unread if not current conversation
-        if (this.currentConversation !== phoneNumber && message.direction === 'inbound') {
-            this.unreadConversations.add(phoneNumber);
         }
         
         // If it's a new conversation, automatically select it
