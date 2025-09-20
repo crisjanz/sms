@@ -216,9 +216,10 @@ app.post('/send-message', async (req, res) => {
 // Twilio webhook for incoming messages
 app.post('/webhook', async (req, res) => {
   try {
+    console.log('Webhook received:', req.body);
     const { From, To, Body, MessageSid } = req.body;
     
-    console.log('Incoming message:', { From, To, Body });
+    console.log('Incoming message:', { From, To, Body, MessageSid });
     
     // Add to conversations
     if (!conversations[From]) {
@@ -254,11 +255,14 @@ app.post('/webhook', async (req, res) => {
     // Broadcast to connected clients
     io.emit('new-message', { phoneNumber: From, message: messageData });
     
-    res.status(200).send('OK');
+    // Return proper TwiML response (required for Twilio webhooks)
+    res.type('text/xml');
+    res.send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     
   } catch (error) {
     console.error('Error handling webhook:', error);
-    res.status(500).send('Error');
+    res.type('text/xml');
+    res.status(500).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   }
 });
 
@@ -300,6 +304,15 @@ app.post('/import-customers', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Test webhook endpoint
+app.get('/webhook', (req, res) => {
+  res.json({ 
+    status: 'webhook endpoint active', 
+    timestamp: new Date(),
+    message: 'Use POST method for Twilio webhooks'
+  });
 });
 
 // Ping endpoint for uptime monitoring
