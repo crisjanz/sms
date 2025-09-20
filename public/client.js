@@ -66,6 +66,7 @@ class SMSDashboard {
         
         // Socket events
         this.socket.on('new-message', (data) => {
+            console.log('Received new-message event:', data);
             this.handleNewMessage(data);
         });
         

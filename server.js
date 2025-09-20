@@ -268,7 +268,9 @@ app.post('/webhook', async (req, res) => {
     }
     
     // Broadcast to connected clients
+    console.log('Broadcasting new message to', io.engine.clientsCount, 'clients');
     io.emit('new-message', { phoneNumber: From, message: messageData });
+    console.log('Broadcast sent for message from:', From);
     
     // Return proper TwiML response (required for Twilio webhooks)
     res.type('text/xml');
@@ -323,11 +325,22 @@ app.post('/import-customers', async (req, res) => {
 
 // Test webhook endpoint
 app.get('/webhook', (req, res) => {
+  console.log('GET request to webhook endpoint');
   res.json({ 
     status: 'webhook endpoint active', 
     timestamp: new Date(),
     message: 'Use POST method for Twilio webhooks'
   });
+});
+
+// Log all requests to webhook
+app.use('/webhook', (req, res, next) => {
+  console.log(`Webhook ${req.method} request received:`, {
+    method: req.method,
+    headers: req.headers,
+    body: req.body
+  });
+  next();
 });
 
 // Ping endpoint for uptime monitoring
