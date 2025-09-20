@@ -1,10 +1,15 @@
 class SMSDashboard {
     constructor() {
         this.socket = io({
-            transports: ['websocket', 'polling'],
-            forceNew: true,
+            transports: ['polling', 'websocket'], // Try polling first for Render stability
+            forceNew: false,
             reconnection: true,
-            timeout: 5000
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 10000,
+            pingTimeout: 60000,
+            pingInterval: 25000
         });
         this.conversations = {};
         this.customers = {};
@@ -77,6 +82,7 @@ class SMSDashboard {
         // Debug connection
         this.socket.on('connect', () => {
             console.log('Socket connected:', this.socket.id);
+            this.stopPollingFallback(); // Stop polling when WebSocket reconnects
         });
         
         this.socket.on('disconnect', () => {
@@ -86,6 +92,26 @@ class SMSDashboard {
         this.socket.on('connect_error', (error) => {
             console.error('Socket connection error:', error);
         });
+        
+        this.socket.on('reconnect', (attemptNumber) => {
+            console.log('Socket reconnected after', attemptNumber, 'attempts');
+        });
+        
+        this.socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log('Socket reconnection attempt:', attemptNumber);
+        });
+        
+        this.socket.on('reconnect_error', (error) => {
+            console.error('Socket reconnection error:', error);
+        });
+        
+        this.socket.on('reconnect_failed', () => {
+            console.error('Socket reconnection failed - falling back to polling');
+            this.startPollingFallback();
+        });
+        
+        // Fallback polling mechanism
+        this.pollingInterval = null;
     }
     
     async loadData() {
@@ -453,6 +479,53 @@ class SMSDashboard {
         } finally {
             // Clear file input
             event.target.value = '';
+        }
+    }
+    
+    startPollingFallback() {
+        if (this.pollingInterval) return; // Already polling
+        
+        console.log('Starting polling fallback every 10 seconds');
+        this.pollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/conversations');
+                const newConversations = await response.json();
+                
+                // Check for new messages
+                let hasNewMessages = false;
+                for (const phoneNumber in newConversations) {
+                    const newCount = newConversations[phoneNumber].length;
+                    const oldCount = this.conversations[phoneNumber] ? this.conversations[phoneNumber].length : 0;
+                    
+                    if (newCount > oldCount) {
+                        hasNewMessages = true;
+                        // Mark as unread if not current conversation
+                        if (this.currentConversation !== phoneNumber) {
+                            this.unreadConversations.add(phoneNumber);
+                        }
+                    }
+                }
+                
+                if (hasNewMessages) {
+                    this.conversations = newConversations;
+                    this.renderConversations();
+                    
+                    // Update current conversation if selected
+                    if (this.currentConversation) {
+                        this.renderMessages(this.currentConversation);
+                    }
+                }
+            } catch (error) {
+                console.error('Polling fallback error:', error);
+            }
+        }, 10000);
+    }
+    
+    stopPollingFallback() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            console.log('Stopped polling fallback');
         }
     }
 }
