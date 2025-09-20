@@ -73,8 +73,12 @@ async function loadConversationsFromTwilio() {
     
     conversations = {};
     
+    const twilioFromNumber = process.env.TWILIO_FROM_NUMBER;
+    
     messages.forEach(message => {
-      const phoneNumber = message.direction === 'inbound' ? message.from : message.to;
+      // Determine if message is outbound (from our Twilio number) or inbound (to our Twilio number)
+      const isOutbound = message.from === twilioFromNumber;
+      const phoneNumber = isOutbound ? message.to : message.from;
       
       if (!conversations[phoneNumber]) {
         conversations[phoneNumber] = [];
@@ -85,7 +89,7 @@ async function loadConversationsFromTwilio() {
         from: message.from,
         to: message.to,
         body: message.body,
-        direction: message.direction,
+        direction: isOutbound ? 'outbound' : 'inbound',
         timestamp: message.dateCreated,
         status: message.status
       });
