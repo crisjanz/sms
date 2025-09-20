@@ -45,10 +45,20 @@ async function initializeApp() {
     settings = JSON.parse(settingsData);
     
     // Initialize Twilio client
-    twilioClient = twilio(
-      process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_AUTH_TOKEN
-    );
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    
+    if (!accountSid || !authToken) {
+      console.error('ERROR: Missing Twilio environment variables!');
+      console.error('Required: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN');
+      console.error('Check your Render environment variables.');
+      process.exit(1);
+    }
+    
+    twilioClient = twilio(accountSid, authToken);
+    console.log('Twilio client initialized successfully');
+    console.log('FROM_NUMBER:', process.env.TWILIO_FROM_NUMBER);
+    console.log('OWNER_PHONE:', process.env.OWNER_PHONE_NUMBER);
     
     // Load customers
     try {
@@ -219,6 +229,9 @@ app.post('/send-message', async (req, res) => {
 app.post('/webhook', async (req, res) => {
   try {
     console.log('Webhook received:', req.body);
+    console.log('Twilio client exists:', !!twilioClient);
+    console.log('FROM_NUMBER in webhook:', process.env.TWILIO_FROM_NUMBER);
+    
     const { From, To, Body, MessageSid } = req.body;
     
     console.log('Incoming message:', { From, To, Body, MessageSid });
