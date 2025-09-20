@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Dashboard - In Your Vase Flowers</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SMS Dashboard - In Your Vase Flowers</h1>
+        </header>
+        
+        <div class="dashboard">
+            <!-- Left Sidebar - Conversations List -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h3>Conversations</h3>
+                </div>
+                <div class="conversations-list" id="conversationsList">
+                    <!-- Conversations will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Right Panel - Chat Interface -->
+            <div class="chat-panel">
+                <div class="chat-header" id="chatHeader">
+                    <h4>Select a conversation or send a new message</h4>
+                </div>
+                
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Messages will be displayed here -->
+                </div>
+                
+                <!-- Send Message Form -->
+                <div class="send-form">
+                    <div class="form-row">
+                        <input type="tel" id="phoneNumber" placeholder="Phone Number (+1234567890)" />
+                        <input type="text" id="customerName" placeholder="Customer Name" />
+                    </div>
+                    <div class="form-row">
+                        <textarea id="messageText" placeholder="Type your message here..." rows="3"></textarea>
+                        <button id="sendButton">Send</button>
+                    </div>
+                    <div class="form-row">
+                        <button id="defaultMessageButton">Use Default Message</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
