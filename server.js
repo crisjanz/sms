@@ -257,14 +257,21 @@ app.post('/webhook', async (req, res) => {
     // Forward to owner if configured
     const ownerPhone = process.env.OWNER_PHONE_NUMBER || settings.ownerPhoneNumber;
     if (ownerPhone) {
-      const customerName = customers[From] || From;
-      const forwardMessage = `SMS from ${customerName}: ${Body}`;
-      
-      await twilioClient.messages.create({
-        body: forwardMessage,
-        from: process.env.TWILIO_FROM_NUMBER,
-        to: ownerPhone
-      });
+      try {
+        const customerName = customers[From] || From;
+        const forwardMessage = `SMS from ${customerName}: ${Body}`;
+        
+        await twilioClient.messages.create({
+          body: forwardMessage,
+          from: process.env.TWILIO_FROM_NUMBER,
+          to: ownerPhone
+        });
+        console.log('Message forwarded to owner successfully');
+      } catch (forwardError) {
+        console.error('Failed to forward message to owner:', forwardError.message);
+        console.log('Continuing with webhook processing...');
+        // Don't throw - continue processing the webhook
+      }
     }
     
     // Broadcast to connected clients
