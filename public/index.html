@@ -9,7 +9,14 @@
 <body>
     <div class="container">
         <header>
-            <h1>SMS Dashboard - In Your Vase Flowers</h1>
+            <div class="header-content">
+                <h1>SMS Dashboard - In Your Vase Flowers</h1>
+                <div class="header-actions">
+                    <button id="exportButton" class="header-btn">Export Database</button>
+                    <button id="importButton" class="header-btn">Import Database</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                </div>
+            </div>
         </header>
         
         <div class="dashboard">
@@ -17,6 +24,7 @@
             <div class="sidebar">
                 <div class="sidebar-header">
                     <h3>Conversations</h3>
+                    <button id="newConversationButton" class="new-conversation-btn">+ New</button>
                 </div>
                 <div class="conversations-list" id="conversationsList">
                     <!-- Conversations will be populated here -->

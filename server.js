@@ -258,6 +258,46 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
+// Export customers database
+app.get('/export-customers', (req, res) => {
+  try {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `sms-customers-${timestamp}.json`;
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Import customers database
+app.post('/import-customers', async (req, res) => {
+  try {
+    const importedCustomers = req.body;
+    
+    // Validate format
+    if (typeof importedCustomers !== 'object' || importedCustomers === null) {
+      return res.status(400).json({ error: 'Invalid file format' });
+    }
+    
+    // Merge with existing customers
+    Object.assign(customers, importedCustomers);
+    
+    // Save to file
+    await fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 2));
+    
+    res.json({ 
+      success: true, 
+      imported: Object.keys(importedCustomers).length,
+      total: Object.keys(customers).length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Ping endpoint for uptime monitoring
 app.get('/ping', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });

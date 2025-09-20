@@ -21,12 +21,40 @@ header {
     background-color: #2c3e50;
     color: white;
     padding: 1rem;
-    text-align: center;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 100%;
 }
 
 header h1 {
     font-size: 1.5rem;
     font-weight: 600;
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.header-btn {
+    background-color: #34495e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.header-btn:hover {
+    background-color: #4a6ba3;
 }
 
 .dashboard {
@@ -49,11 +77,31 @@ header h1 {
     color: white;
     padding: 1rem;
     border-bottom: 1px solid #34495e;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .sidebar-header h3 {
     font-size: 1.1rem;
     font-weight: 600;
+    margin: 0;
+}
+
+.new-conversation-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.new-conversation-btn:hover {
+    background-color: #0056b3;
 }
 
 .conversations-list {

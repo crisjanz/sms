@@ -21,6 +21,10 @@ class SMSDashboard {
         this.messageTextarea = document.getElementById('messageText');
         this.sendButton = document.getElementById('sendButton');
         this.defaultMessageButton = document.getElementById('defaultMessageButton');
+        this.newConversationButton = document.getElementById('newConversationButton');
+        this.exportButton = document.getElementById('exportButton');
+        this.importButton = document.getElementById('importButton');
+        this.importFile = document.getElementById('importFile');
     }
     
     bindEvents() {
@@ -35,6 +39,14 @@ class SMSDashboard {
         
         // Default message
         this.defaultMessageButton.addEventListener('click', () => this.useDefaultMessage());
+        
+        // New conversation
+        this.newConversationButton.addEventListener('click', () => this.startNewConversation());
+        
+        // Export/Import database
+        this.exportButton.addEventListener('click', () => this.exportDatabase());
+        this.importButton.addEventListener('click', () => this.importFile.click());
+        this.importFile.addEventListener('change', (e) => this.importDatabase(e));
         
         // Phone number input formatting
         this.phoneNumberInput.addEventListener('input', (e) => {
@@ -165,12 +177,11 @@ class SMSDashboard {
         const messages = this.conversations[phoneNumber];
         
         messages.forEach(message => {
+            const isOutbound = message.direction === 'outbound';
             const messageElement = document.createElement('div');
-            messageElement.className = `message ${message.direction === 'outbound' ? 'outbound' : 'inbound'}`;
+            messageElement.className = `message ${isOutbound ? 'outbound' : 'inbound'}`;
             
             const timeString = new Date(message.timestamp).toLocaleString();
-            
-            const isOutbound = message.direction === 'outbound';
             const senderLabel = isOutbound ? 'You' : (this.customers[phoneNumber] || phoneNumber);
             
             messageElement.innerHTML = `
@@ -344,6 +355,85 @@ class SMSDashboard {
             if (indicator) {
                 indicator.classList.toggle('hidden', !this.unreadConversations.has(phoneNumber));
             }
+        }
+    }
+    
+    startNewConversation() {
+        // Clear current conversation selection
+        document.querySelectorAll('.conversation-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        this.currentConversation = null;
+        
+        // Clear and focus form
+        this.phoneNumberInput.value = '';
+        this.customerNameInput.value = '';
+        this.messageTextarea.value = '';
+        
+        // Update chat header
+        this.chatHeader.innerHTML = '<h4>New Conversation</h4>';
+        
+        // Clear messages
+        this.messagesContainer.innerHTML = '<div class="empty-state">Enter a phone number and message to start a new conversation</div>';
+        
+        // Focus phone number input
+        this.phoneNumberInput.focus();
+    }
+    
+    async exportDatabase() {
+        try {
+            // Create a link element and trigger download
+            const link = document.createElement('a');
+            link.href = '/export-customers';
+            link.download = `sms-customers-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('Database exported successfully');
+        } catch (error) {
+            console.error('Error exporting database:', error);
+            alert('Error exporting database: ' + error.message);
+        }
+    }
+    
+    async importDatabase(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const importedData = JSON.parse(text);
+            
+            const response = await fetch('/import-customers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(importedData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`Successfully imported ${result.imported} customers. Total: ${result.total} customers.`);
+                
+                // Reload customers data
+                const customersResponse = await fetch('/customers');
+                this.customers = await customersResponse.json();
+                
+                // Re-render conversations to show updated names
+                this.renderConversations();
+            } else {
+                alert('Error importing database: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error importing database:', error);
+            alert('Error importing database: ' + error.message);
+        } finally {
+            // Clear file input
+            event.target.value = '';
         }
     }
 }
