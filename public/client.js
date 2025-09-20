@@ -5,6 +5,7 @@ class SMSDashboard {
         this.customers = {};
         this.currentConversation = null;
         this.defaultMessage = '';
+        this.unreadConversations = new Set();
         
         this.initializeElements();
         this.bindEvents();
@@ -49,6 +50,10 @@ class SMSDashboard {
         // Socket events
         this.socket.on('new-message', (data) => {
             this.handleNewMessage(data);
+        });
+        
+        this.socket.on('conversation-deleted', (data) => {
+            this.handleConversationDeleted(data);
         });
     }
     
@@ -96,14 +101,27 @@ class SMSDashboard {
             conversationElement.className = 'conversation-item';
             conversationElement.dataset.phoneNumber = phoneNumber;
             
+            const isUnread = this.unreadConversations.has(phoneNumber);
+            
             conversationElement.innerHTML = `
-                <div class="conversation-name">${customerName}</div>
-                <div class="conversation-phone">${phoneNumber}</div>
-                <div class="conversation-preview">${lastMessage.body}</div>
+                <div class="unread-indicator ${isUnread ? '' : 'hidden'}"></div>
+                <div class="conversation-content">
+                    <div class="conversation-name">${customerName}</div>
+                    <div class="conversation-phone">${phoneNumber}</div>
+                    <div class="conversation-preview">${lastMessage.body}</div>
+                </div>
+                <div class="conversation-actions">
+                    <button class="delete-button" data-phone="${phoneNumber}" title="Delete conversation">×</button>
+                </div>
             `;
             
-            conversationElement.addEventListener('click', () => {
-                this.selectConversation(phoneNumber);
+            conversationElement.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-button')) {
+                    e.stopPropagation();
+                    this.deleteConversation(phoneNumber);
+                } else {
+                    this.selectConversation(phoneNumber);
+                }
             });
             
             this.conversationsList.appendChild(conversationElement);
@@ -119,6 +137,10 @@ class SMSDashboard {
         
         // Set current conversation
         this.currentConversation = phoneNumber;
+        
+        // Mark as read
+        this.unreadConversations.delete(phoneNumber);
+        this.updateUnreadIndicator(phoneNumber);
         
         // Update chat header
         const customerName = this.customers[phoneNumber] || 'Unknown';
@@ -148,7 +170,11 @@ class SMSDashboard {
             
             const timeString = new Date(message.timestamp).toLocaleString();
             
+            const isOutbound = message.direction === 'outbound';
+            const senderLabel = isOutbound ? 'You' : (this.customers[phoneNumber] || phoneNumber);
+            
             messageElement.innerHTML = `
+                <div class="message-sender">${senderLabel}</div>
                 <div class="message-bubble">${message.body}</div>
                 <div class="message-time">${timeString}</div>
             `;
@@ -214,7 +240,15 @@ class SMSDashboard {
     }
     
     useDefaultMessage() {
-        this.messageTextarea.value = this.defaultMessage;
+        const customerName = this.customerNameInput.value.trim();
+        let message = this.defaultMessage;
+        
+        // Replace [Name] placeholder with actual customer name
+        if (customerName) {
+            message = message.replace(/\[Name\]/g, customerName);
+        }
+        
+        this.messageTextarea.value = message;
         this.messageTextarea.focus();
     }
     
@@ -235,9 +269,81 @@ class SMSDashboard {
             this.renderMessages(phoneNumber);
         }
         
+        // Mark as unread if not current conversation
+        if (this.currentConversation !== phoneNumber && message.direction === 'inbound') {
+            this.unreadConversations.add(phoneNumber);
+        }
+        
         // If it's a new conversation, automatically select it
         if (this.conversations[phoneNumber].length === 1) {
             this.selectConversation(phoneNumber);
+        }
+    }
+    
+    async deleteConversation(phoneNumber) {
+        if (!confirm(`Delete conversation with ${this.customers[phoneNumber] || phoneNumber}?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/conversations/${encodeURIComponent(phoneNumber)}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Remove from local data
+                delete this.conversations[phoneNumber];
+                this.unreadConversations.delete(phoneNumber);
+                
+                // Clear current conversation if it was deleted
+                if (this.currentConversation === phoneNumber) {
+                    this.currentConversation = null;
+                    this.chatHeader.innerHTML = '<h4>Select a conversation or send a new message</h4>';
+                    this.messagesContainer.innerHTML = '';
+                    this.phoneNumberInput.value = '';
+                    this.customerNameInput.value = '';
+                }
+                
+                // Re-render conversations
+                this.renderConversations();
+            } else {
+                alert('Error deleting conversation: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error deleting conversation:', error);
+            alert('Error deleting conversation: ' + error.message);
+        }
+    }
+    
+    handleConversationDeleted(data) {
+        const { phoneNumber } = data;
+        
+        // Remove from local data
+        delete this.conversations[phoneNumber];
+        this.unreadConversations.delete(phoneNumber);
+        
+        // Clear current conversation if it was deleted
+        if (this.currentConversation === phoneNumber) {
+            this.currentConversation = null;
+            this.chatHeader.innerHTML = '<h4>Select a conversation or send a new message</h4>';
+            this.messagesContainer.innerHTML = '';
+            this.phoneNumberInput.value = '';
+            this.customerNameInput.value = '';
+        }
+        
+        // Re-render conversations
+        this.renderConversations();
+    }
+    
+    updateUnreadIndicator(phoneNumber) {
+        const conversationElement = document.querySelector(`[data-phone-number="${phoneNumber}"]`);
+        if (conversationElement) {
+            const indicator = conversationElement.querySelector('.unread-indicator');
+            if (indicator) {
+                indicator.classList.toggle('hidden', !this.unreadConversations.has(phoneNumber));
+            }
         }
     }
 }

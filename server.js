@@ -141,6 +141,27 @@ app.post('/customers', async (req, res) => {
   }
 });
 
+// Delete conversation
+app.delete('/conversations/:phoneNumber', async (req, res) => {
+  try {
+    const phoneNumber = decodeURIComponent(req.params.phoneNumber);
+    
+    if (conversations[phoneNumber]) {
+      delete conversations[phoneNumber];
+      await fs.writeFile(CONVERSATIONS_FILE, JSON.stringify(conversations, null, 2));
+      
+      // Broadcast deletion to connected clients
+      io.emit('conversation-deleted', { phoneNumber });
+      
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Conversation not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Send message
 app.post('/send-message', async (req, res) => {
   try {

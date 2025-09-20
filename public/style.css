@@ -67,6 +67,10 @@ header h1 {
     cursor: pointer;
     transition: background-color 0.2s;
     color: white;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
 }
 
 .conversation-item:hover {
@@ -95,6 +99,55 @@ header h1 {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.conversation-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.conversation-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.conversation-item:hover .conversation-actions {
+    opacity: 1;
+}
+
+.delete-button {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+    background: #c0392b;
+}
+
+.unread-indicator {
+    width: 8px;
+    height: 8px;
+    background-color: #007bff;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 0.5rem;
+}
+
+.unread-indicator.hidden {
+    visibility: hidden;
 }
 
 /* Chat Panel */
@@ -135,6 +188,14 @@ header h1 {
 
 .message.inbound {
     align-items: flex-start;
+}
+
+.message-sender {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    padding: 0 0.5rem;
+    font-weight: 600;
 }
 
 .message-bubble {
